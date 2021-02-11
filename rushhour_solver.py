@@ -1,4 +1,36 @@
 
+def applyMove(rushhour, car, move):
+    dim = len(rushhour)
+    empty_space = '-'
+    mv = move[0]
+    loc = move[1]
+    idx = move[2]
+    if mv == 'U':
+        for i in range(dim-1, -1, -1):
+            if rushhour[i][loc] == car:
+                rushhour[i][loc] = empty_space
+                rushhour[idx][loc] = car
+                break
+    elif mv == 'D':
+        for i in range(0, dim, 1):
+            if rushhour[i][loc] == car:
+                rushhour[i][loc] = empty_space
+                rushhour[idx][loc] = car
+                break
+    elif mv == 'L':
+        for i in range(dim-1, -1, -1):
+            if rushhour[loc][i] == car:
+                rushhour[loc][i] = empty_space
+                rushhour[loc][idx] = car
+                break
+    elif mv == 'R':
+        for i in range(0, dim, 1):
+            if rushhour[loc][i] == car:
+                rushhour[loc][i] = empty_space
+                rushhour[loc][idx] = car
+                break
+    return rushhour
+
 def getCarData(rushhour):
     carData = {}
     mv_horizontal, mv_vertical = 1, 2
@@ -37,7 +69,7 @@ def getCarData(rushhour):
                 break
     return carData
 
-def getAllowedMoves(rushhour, carData):
+def getAllowedMoves(rushhour, carData, curSol):
     allowedMoves = {}
     mv_horizontal, mv_vertical = 1, 2
     empty_space = "-"
@@ -55,10 +87,14 @@ def getAllowedMoves(rushhour, carData):
                     found = True
                     if lastEntry == empty_space:
                         # last position was empty and current is car, so left move allowed
-                        tmpAllowedMoves.append(["L", i - 1])
+                        # prune counter moves
+                        if len(curSol) == 0 or len(curSol)>0 and (curSol[-1][0] != car or curSol[-1][1] != 'R'):
+                           tmpAllowedMoves.append(["L", loc, i - 1])
                 elif found and lastEntry == car and rushhour[loc][i] == empty_space:
                     # last position was car and right is empty, so right move allowed
-                    tmpAllowedMoves.append(["R", i])
+                    # prune counter moves
+                    if len(curSol) == 0 or len(curSol)>0 and (curSol[-1][0] != car or curSol[-1][1] != 'L'):
+                        tmpAllowedMoves.append(["R", loc, i])
                     proceed_next_car = True
                 lastEntry = rushhour[loc][i]
             else:
@@ -66,10 +102,14 @@ def getAllowedMoves(rushhour, carData):
                     found = True
                     if lastEntry == empty_space:
                         # last position was empty and current is car, so up move allowed
-                        tmpAllowedMoves.append(["U", i - 1])
+                        # prune counter moves
+                        if len(curSol) == 0 or len(curSol)>0 and (curSol[-1][0] != car or curSol[-1][1] != 'D'):
+                            tmpAllowedMoves.append(["U", loc, loc, i - 1])
                 elif found and lastEntry == car and rushhour[i][loc] == empty_space:
                     # last position was car and down is empty, so down move allowed
-                    tmpAllowedMoves.append(["D", i])
+                    # prune counter moves
+                    if len(curSol) == 0 or len(curSol) > 0 and (curSol[-1][0] != car or curSol[-1][1] != 'U'):
+                        tmpAllowedMoves.append(["D", loc, i])
                     proceed_next_car = True
                 lastEntry = rushhour[i][loc]
             if proceed_next_car:
@@ -78,80 +118,57 @@ def getAllowedMoves(rushhour, carData):
             allowedMoves[car] = {"moves": tmpAllowedMoves, "dir": dir, "loc": loc}
     return allowedMoves
 
-def getCandidates(rushhour):
-    return allowed
-
-def findNextEmptyCell(rushhour, rowId, colId):
-    row = rowId
-    col = colId
-    for i in range(row,9):
-        for j in range(col,9):
-            if rushhour[i,j] == 0:
-                return i, j
-        col = 0
-    return None, None
-
 def isSolved(rushhour):
-    return rushhour.flatten().sum() == 405
+    dim = len(rushhour)
+    redcar = 'X'
+    empty_space = '-'
+    found = False
+    blocked = False
+    for i in range(0, dim):
+        if rushhour[2][i] == redcar:
+            found = True
+        elif found and rushhour[2][i] != empty_space:
+                blocked = True
+                break
+    return not blocked
 
 def solve(rushhour, lastMoves = [], tabuSize = 1, carData=None, curSol = [], bestMove = []):
     retval = dict()
+    max_size = 20
     # determine cars available
     if carData == None:
         carData = getCarData(rushhour)
+    print(curSol)
     # now determine allowed moves
-    allowedMoves = getAllowedMoves(rushhour, carData)
-    print("maus")
+    allowedMoves = getAllowedMoves(rushhour, carData, curSol)
     # loop through all allowed moves
     for car in allowedMoves.keys():
         moves = allowedMoves.get(car)["moves"]
         for move in moves:
-            newRushhour = applyMove(rushhour, move, allowedMoves)
-            curSol.append(car + move)
+            # perform move
+            newRushhour = applyMove(rushhour, car, move)
+            curSol.append(car + move[0])
+            # apppend move to curSol
             # if solved
             if isSolved(newRushhour):
                 # store solution
                 retval['task'] = newRushhour
                 retval['moves'] = curSol
+                if len(curSol) < max_size and (len(bestMove) == 0 or len(bestMove) < len(curSol)):
+                    bestMove = curSol
                 return retval
-            elif len(bestMove) != 0 and len(curSol) > len(bestMove):
-                solve(newRushhour)
-        # perform move
-        # apppend move to curSol
-
-        # if solved
-            # store solution
-        # if curSol >= leength bestMove
-            # return bestMove
-        # else
-            # solve()
-        # end if
-
-
-
-
-
-
-
-    # first determine next empty cell starting from rowId / colId, if current cell is not empty (!=0)
-
-
-
-    if rushhour[rowId, colId] != 0:
-        # field already set, find next empty cell
-        rowId, colId = findNextEmptyCell(rushhour, rowId, colId)
-        if rowId == None or colId == None:
-            return rushhour
-    # determine potential candidates for given cell
-    cands = getCandidates(rushhour, rowId, colId)
-    # loop through all candidates and
-    for cand in cands:
-        rushhour[rowId, colId] = cand
-        rushhour = solve(rushhour, rowId, colId)
-        if isSolved(rushhour):
-            return rushhour
-    rushhour[rowId, colId] = 0
-    return rushhour
+            elif len(curSol) < max_size and (len(bestMove) == 0 or len(curSol) < len(bestMove)):
+                # if not solved and current move-list not longer than best solution found
+                # try solve
+                retval = solve(newRushhour, carData = carData, curSol = curSol, bestMove = bestMove)
+                newRushhour = retval['task']
+                if isSolved(newRushhour):
+                    if len(bestMove) == 0 or len(bestMove) < len(curSol):
+                        bestMove = curSol
+                    return retval
+                else:
+                    curSol.pop()
+    return retval
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':

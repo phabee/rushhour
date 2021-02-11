@@ -1,3 +1,6 @@
+def printSol(rushhour):
+    for i in range(0, len(rushhour)):
+        print(rushhour[i])
 
 def applyMove(rushhour, car, move):
     dim = len(rushhour)
@@ -89,7 +92,7 @@ def getAllowedMoves(rushhour, carData, curSol):
                         # last position was empty and current is car, so left move allowed
                         # prune counter moves
                         if len(curSol) == 0 or len(curSol)>0 and (curSol[-1][0] != car or curSol[-1][1] != 'R'):
-                           tmpAllowedMoves.append(["L", loc, i - 1])
+                            tmpAllowedMoves.append(["L", loc, i - 1])
                 elif found and lastEntry == car and rushhour[loc][i] == empty_space:
                     # last position was car and right is empty, so right move allowed
                     # prune counter moves
@@ -104,7 +107,7 @@ def getAllowedMoves(rushhour, carData, curSol):
                         # last position was empty and current is car, so up move allowed
                         # prune counter moves
                         if len(curSol) == 0 or len(curSol)>0 and (curSol[-1][0] != car or curSol[-1][1] != 'D'):
-                            tmpAllowedMoves.append(["U", loc, loc, i - 1])
+                            tmpAllowedMoves.append(["U", loc, i - 1])
                 elif found and lastEntry == car and rushhour[i][loc] == empty_space:
                     # last position was car and down is empty, so down move allowed
                     # prune counter moves
@@ -139,6 +142,7 @@ def solve(rushhour, lastMoves = [], tabuSize = 1, carData=None, curSol = [], bes
     if carData == None:
         carData = getCarData(rushhour)
     print(curSol)
+    printSol(rushhour)
     # now determine allowed moves
     allowedMoves = getAllowedMoves(rushhour, carData, curSol)
     # loop through all allowed moves
